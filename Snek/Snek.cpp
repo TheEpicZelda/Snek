@@ -23,7 +23,10 @@ WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 char inputDirection;
 char currentDirection = 'r';
+int snekLength;
+Point snekments[3200];
 Point food;
+Point testTail[100];
 int score = 0;
 int xCoords = 80;
 int yCoords = 40;
@@ -71,6 +74,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
+    // TODO: Place code here.
+
+    
+
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_SNEK, szWindowClass, MAX_LOADSTRING);
@@ -85,6 +92,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SNEK));
 
     MSG msg;
+    //HWND timering;
 
     // Main message loop:
     while (GetMessage(&msg, nullptr, 0, 0))
@@ -98,6 +106,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+        //moveSnek('r');
+        
+        
     }
 
     return (int) msg.wParam;
@@ -157,16 +168,19 @@ void eatFood(HWND hWnd)
 void updateField(HWND hWnd, int x, int y)
 {
     RECT updateRect;
+    //GetUpdateRect(hWnd, &updateRect, false);
     updateRect.left = fieldStartX;
     updateRect.right = xCoords * 10 + fieldStartX;
     updateRect.top = fieldStartY;
     updateRect.bottom = yCoords * 10 + fieldStartY;
     InvalidateRect(hWnd, &updateRect, true);
+    //RedrawWindow(hWnd, &updateRect, NULL, RDW_UPDATENOW);
 }
 
 void updateSnake(HWND hWnd)
 {
     RECT updateSnake;
+    
 
     if (isAboveCurrent(playsnake.getHead(), playsnake.getSegment(1)))
     {
@@ -231,6 +245,7 @@ void updateSnake(HWND hWnd)
 
     InvalidateRect(hWnd, &updateSnake, false);
     UpdateWindow(hWnd);
+    //RedrawWindow(hWnd, &updateSnake, NULL, RDW_INTERNALPAINT);
 }
 
 void updateFood(HWND hWnd)
@@ -251,6 +266,40 @@ void updateScore(HWND hWnd)
     updateText.top = 440;
     updateText.bottom = 500;
     InvalidateRect(hWnd, &updateText, false);
+}
+
+
+
+void drawLine(HDC hdc, int startX, int startY, int endX, int endY, int r, int g, int b)
+{
+    //SetPixel(hdc, startX, startY, RGB(r, g, b));
+    //SetPixel(hdc, endX, endY, RGB(r, g, b));
+    if (startX == endX)
+    {
+        for (int i = startY; i < endY; i++)
+        {
+            SetPixel(hdc, startX + fieldStartX, i, RGB(r, g, b));
+        }
+    }
+    else if (startY == endY)
+    {
+        for (int i = startX; i < endX; i++)
+        {
+            SetPixel(hdc, i + fieldStartY, startY, RGB(r, g, b));
+        }
+    }
+    else
+    { }
+}
+
+void paintSnekHead(HDC hdc, char direction, Point seg)
+{
+    if (direction == 'r')
+    {
+        drawLine(hdc, seg.getX() * 10 + xOffset, seg.getY() * 10 + yOffset, (seg.getX() + 1) * 10 + xOffset, seg.getY() * 10 + yOffset, 0, 0, 0);
+        drawLine(hdc, (seg.getX() + 1) * 10 + xOffset, seg.getY() * 10 + yOffset, (seg.getX() + 1) * 10 + xOffset, (seg.getY() + 1) * 10 + yOffset, 0, 0, 0);
+        drawLine(hdc, seg.getX() * 10 + xOffset, (seg.getY() + 1) * 10 + yOffset, (seg.getX() + 1) * 10 + xOffset, (seg.getY() + 1) * 10 + yOffset, 0, 0, 0);
+    }
 }
 
 
@@ -388,6 +437,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
+            // TODO: Add any drawing code that uses hdc here...
             SelectObject(hdc, GetStockObject(DC_PEN));
             SetDCPenColor(hdc, RGB(0, 0, 0));
             SelectObject(hdc, GetStockObject(DC_BRUSH));
@@ -395,7 +445,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             //+/- 1 to make the field border just outside the outer snake and food pixels instead of inside them
             Rectangle(hdc, fieldStartX - 1, fieldStartY - 1, xCoords * 10 + fieldStartX + 2, yCoords * 10 + fieldStartY + 2);
+            //srand(time(NULL));
             SetDCBrushColor(hdc, RGB(0, 0, 255));
+
+            //Rectangle(hdc,playsnake.getHead().getX() * 10 + xOffset,playsnake.getHead().getY() * 10 + yOffset, (playsnake.getHead().getX() + 1) * 10 + xOffset, (playsnake.getHead().getY() + 1) * 10 + yOffset);
 
             drawSnakeHead(hdc, currentDirection, playsnake.getHead(), xOffset, yOffset);
 
@@ -411,6 +464,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             Ellipse(hdc, food.getX() * 10 + fieldStartX - 10, food.getY() * 10 + fieldStartY - 10, (food.getX() + 1) * 10 + fieldStartX - 10, (food.getY() + 1) * 10 + fieldStartY - 10);
 
+            
+            
+            //TextOut(hdc, 500, 500, wScore, 4);
             RECT clientRect;
             GetClientRect(hWnd, &clientRect);
             clientRect.top = 450;
@@ -494,6 +550,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
         if (gameState == "Playing")
         {
+            //moveSnek(currentDirection, hWnd);
             removedPoint = playsnake.getTail();
             playsnake.move(currentDirection);
 
@@ -507,6 +564,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 eatFood(hWnd);
             }
 
+            //updateField(hWnd, 1, 1);
             updateSnake(hWnd);
         }
         else if (gameState == "Over")
